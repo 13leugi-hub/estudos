@@ -100,15 +100,21 @@ document.addEventListener('DOMContentLoaded', () => {
 async function carregarEstudos() {
     try {
         const res = await fetch(`${API_URL}/estudos`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) {
+            // Tenta ler o body do erro para melhor diagnóstico
+            let msg = `HTTP ${res.status}`;
+            try { const j = await res.json(); msg = j.error || j.message || msg; } catch {}
+            throw new Error(msg);
+        }
         estudos = await res.json();
         localStorage.setItem('ja_cache', JSON.stringify(estudos));
         setOnline(true);
     } catch (err) {
-        console.warn('Offline:', err.message);
+        console.error('[Jornada] Falha na API:', err.message);
+        console.info('[Jornada] Dica: Se o erro for sobre "data_inicio", execute MIGRATION.sql no Supabase SQL Editor.');
         setOnline(false);
         const c = localStorage.getItem('ja_cache');
-        if (c) estudos = JSON.parse(c);
+        if (c) { estudos = JSON.parse(c); console.info('[Jornada] Usando cache local.'); }
     }
     updateDashboard();
     filterEstudos();
