@@ -1,212 +1,119 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
-const path = require('path');
+const cors    = require('cors');
+const path    = require('path');
 const { createClient } = require('@supabase/supabase-js');
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// CONFIGURAÇÃO DO SUPABASE
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-    console.error('❌ ERRO: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não configurados no .env');
+    console.error('ERRO: Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no .env');
     process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-console.log('✅ Supabase conectado:', supabaseUrl);
 
-// MIDDLEWARES
-app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
+app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','PATCH','OPTIONS'], allowedHeaders: ['Content-Type'] }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use((req, res, next) => {
-    console.log(`📥 ${new Date().toISOString()} - ${req.method} ${req.path}`);
-    next();
-});
+app.use((req, _res, next) => { console.log(`${new Date().toISOString()} ${req.method} ${req.path}`); next(); });
+app.use(express.static(path.join(__dirname, 'public')));
 
-// SERVIR ARQUIVOS ESTÁTICOS
-const publicPath = path.join(__dirname, 'public');
-app.use(express.static(publicPath));
-
-// HEALTH CHECK
-app.get('/health', async (req, res) => {
+/* HEALTH */
+app.get('/health', async (_req, res) => {
     try {
-        const { error } = await supabase.from('estudos').select('count', { count: 'exact', head: true });
-        res.json({
-            status: error ? 'unhealthy' : 'healthy',
-            database: error ? 'disconnected' : 'connected',
-            service: 'Jornada Acadêmica API',
-            timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-        res.json({ status: 'unhealthy', error: error.message });
+        const { error } = await supabase.from('estudos').select('count', { count:'exact', head:true });
+        res.json({ status: error ? 'unhealthy' : 'healthy', db: error ? error.message : 'ok' });
+    } catch (e) {
+        res.status(500).json({ status: 'unhealthy', error: e.message });
     }
 });
 
-// ======================== API ESTUDOS ========================
-
-// GET - Listar todos
-app.get('/api/estudos', async (req, res) => {
-    try {
-        const { data, error } = await supabase
-            .from('estudos')
-            .select('*')
-            .order('data_inicio', { ascending: false });
-        if (error) throw error;
-        res.json(data);
-    } catch (error) {
-        console.error('❌ Erro ao buscar estudos:', error);
-        res.status(500).json({ error: 'Erro ao buscar estudos', details: error.message });
-    }
+/* LIST */
+app.get('/api/estudos', async (_req, res) => {
+    const { data, error } = await supabase.from('estudos').select('*').order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
-// GET - Buscar por ID
+/* GET ONE */
 app.get('/api/estudos/:id', async (req, res) => {
-    try {
-        const { data, error } = await supabase
-            .from('estudos')
-            .select('*')
-            .eq('id', req.params.id)
-            .single();
-        if (error) throw error;
-        if (!data) return res.status(404).json({ error: 'Estudo não encontrado' });
-        res.json(data);
-    } catch (error) {
-        console.error('❌ Erro ao buscar estudo:', error);
-        res.status(500).json({ error: 'Erro ao buscar estudo', details: error.message });
-    }
+    const { data, error } = await supabase.from('estudos').select('*').eq('id', req.params.id).single();
+    if (error) return res.status(404).json({ error: error.message });
+    res.json(data);
 });
 
-// POST - Criar estudo
+/* CREATE */
 app.post('/api/estudos', async (req, res) => {
-    try {
-        const { curso, unidade, conteudo, data_inicio, data_termino, observacoes, revisoes, questoes } = req.body;
+    const { curso, unidade, conteudo, data_termino, observacoes, revisoes, questoes } = req.body;
+    if (!curso || !conteudo) return res.status(400).json({ error: 'curso e conteudo são obrigatórios' });
 
-        if (!curso || !conteudo || !data_inicio) {
-            return res.status(400).json({ error: 'Campos obrigatórios: curso, conteudo, data_inicio' });
-        }
-
+    // Auto-status
+    let status = 'PENDENTE';
+    if (data_termino) {
         const hoje = new Date(); hoje.setHours(0,0,0,0);
-        const termino = data_termino ? new Date(data_termino + 'T00:00:00') : null;
-        let status = 'PENDENTE';
-        if (termino && termino < hoje) status = 'ATRASO';
-
-        const { data, error } = await supabase
-            .from('estudos')
-            .insert([{
-                curso,
-                unidade: unidade || '',
-                conteudo,
-                data_inicio,
-                data_termino: data_termino || null,
-                status,
-                observacoes: observacoes || '[]',
-                revisoes: revisoes || '[]',
-                questoes: questoes || '[]'
-            }])
-            .select()
-            .single();
-
-        if (error) throw error;
-        console.log('✅ Estudo criado:', data.id);
-        res.status(201).json(data);
-    } catch (error) {
-        console.error('❌ Erro ao criar estudo:', error);
-        res.status(500).json({ error: 'Erro ao criar estudo', details: error.message });
+        if (new Date(data_termino + 'T00:00:00') < hoje) status = 'ATRASO';
     }
+
+    const { data, error } = await supabase.from('estudos').insert([{
+        curso, unidade: unidade || '', conteudo,
+        data_termino: data_termino || null,
+        status,
+        observacoes: observacoes || '[]',
+        revisoes:    revisoes    || '[]',
+        questoes:    questoes    || '[]'
+    }]).select().single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.status(201).json(data);
 });
 
-// PUT - Atualizar estudo completo
+/* UPDATE FULL */
 app.put('/api/estudos/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { curso, unidade, conteudo, data_inicio, data_termino, status, observacoes, revisoes, questoes } = req.body;
+    const { curso, unidade, conteudo, data_termino, status, observacoes, revisoes, questoes } = req.body;
 
+    let novoStatus = status || 'PENDENTE';
+    if (novoStatus !== 'CONCLUIDO' && data_termino) {
         const hoje = new Date(); hoje.setHours(0,0,0,0);
-        const termino = data_termino ? new Date(data_termino + 'T00:00:00') : null;
-        let novoStatus = status || 'PENDENTE';
-        if (novoStatus !== 'CONCLUIDO') {
-            novoStatus = (termino && termino < hoje) ? 'ATRASO' : 'PENDENTE';
-        }
-
-        const { data, error } = await supabase
-            .from('estudos')
-            .update({ curso, unidade: unidade || '', conteudo, data_inicio, data_termino: data_termino || null, status: novoStatus, observacoes, revisoes, questoes })
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-        if (!data) return res.status(404).json({ error: 'Estudo não encontrado' });
-        console.log('✅ Estudo atualizado:', id);
-        res.json(data);
-    } catch (error) {
-        console.error('❌ Erro ao atualizar estudo:', error);
-        res.status(500).json({ error: 'Erro ao atualizar estudo', details: error.message });
+        novoStatus = new Date(data_termino + 'T00:00:00') < hoje ? 'ATRASO' : 'PENDENTE';
     }
+
+    const { data, error } = await supabase.from('estudos').update({
+        curso, unidade: unidade || '', conteudo,
+        data_termino: data_termino || null,
+        status: novoStatus,
+        observacoes, revisoes, questoes
+    }).eq('id', req.params.id).select().single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data)  return res.status(404).json({ error: 'Não encontrado' });
+    res.json(data);
 });
 
-// PATCH - Atualização parcial (status, revisoes, questoes)
+/* PATCH */
 app.patch('/api/estudos/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updateData = req.body;
-
-        const { data, error } = await supabase
-            .from('estudos')
-            .update(updateData)
-            .eq('id', id)
-            .select()
-            .single();
-
-        if (error) throw error;
-        if (!data) return res.status(404).json({ error: 'Estudo não encontrado' });
-        res.json(data);
-    } catch (error) {
-        console.error('❌ Erro ao atualizar:', error);
-        res.status(500).json({ error: 'Erro ao atualizar', details: error.message });
-    }
+    const { data, error } = await supabase.from('estudos')
+        .update(req.body).eq('id', req.params.id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data)  return res.status(404).json({ error: 'Não encontrado' });
+    res.json(data);
 });
 
-// DELETE - Excluir estudo
+/* DELETE */
 app.delete('/api/estudos/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { error } = await supabase.from('estudos').delete().eq('id', id);
-        if (error) throw error;
-        console.log('✅ Estudo excluído:', id);
-        res.json({ message: 'Estudo excluído com sucesso' });
-    } catch (error) {
-        console.error('❌ Erro ao excluir:', error);
-        res.status(500).json({ error: 'Erro ao excluir estudo', details: error.message });
-    }
+    const { error } = await supabase.from('estudos').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true });
 });
 
-// HOME
-app.get('/', (req, res) => {
-    res.json({ status: 'online', service: 'Jornada Acadêmica API', version: '1.0.0', timestamp: new Date().toISOString() });
-});
+app.get('/', (_req, res) => res.json({ service: 'Jornada Acadêmica API', version: '3.0.0' }));
+app.use((_req, res) => res.status(404).json({ error: 'Não encontrado' }));
 
-// 404
-app.use((req, res) => res.status(404).json({ error: '404 - Rota não encontrada', path: req.path }));
-
-// Error handler
-app.use((error, req, res, next) => {
-    console.error('💥 Erro no servidor:', error);
-    res.status(500).json({ error: 'Erro interno do servidor', message: error.message });
-});
-
-// INICIAR
 app.listen(PORT, '0.0.0.0', () => {
-    console.log('\n🎓 ================================');
-    console.log(`🎓 Jornada Acadêmica API v1.0.0`);
-    console.log(`🚀 Rodando na porta ${PORT}`);
-    console.log(`🔗 Supabase: ${supabaseUrl}`);
-    console.log(`📁 Estáticos: ${publicPath}`);
-    console.log(`🔓 Acesso direto (sem autenticação)`);
-    console.log('🎓 ================================\n');
+    console.log(`\nJornada Academica v3.0.0 — porta ${PORT}`);
+    console.log(`Supabase: ${supabaseUrl}\n`);
 });
