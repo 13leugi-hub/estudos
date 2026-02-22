@@ -26,10 +26,6 @@
                 <span class="status-dot"></span>
             </div>
         </div>
-        <button class="btn-new-order-header" onclick="abrirFormEstudo()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Registrar Estudo
-        </button>
     </div>
 
     <!-- DASHBOARD -->
@@ -109,11 +105,14 @@
             </div>
 
             <!-- ÍCONES DE AÇÃO -->
+            <button class="calendar-btn" onclick="abrirFormEstudo()" title="Registrar novo estudo">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
             <button class="calendar-btn" onclick="toggleCalendar()" title="Selecionar mês">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </button>
-            <button class="calendar-btn" onclick="modalTodasRevisoes.open()" title="Todas as revisões">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <button class="calendar-btn" onclick="modalTodasRevisoes.open()" title="Revisões agendadas">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </button>
             <button class="calendar-btn" onclick="modalBancoQuestoes.open()" title="Banco de questões">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
