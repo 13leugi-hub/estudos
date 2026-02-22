@@ -5,437 +5,389 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jornada Acadêmica</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
-    <!-- Splash Screen -->
-    <div class="splash-screen" id="splashScreen">
-        <div class="loader"></div>
+<!-- SPLASH -->
+<div class="splash-screen" id="splashScreen">
+    <div class="loader"></div>
+</div>
+
+<!-- APP -->
+<div class="app-content" id="appContent">
+<div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <h1>Jornada Acadêmica</h1>
+            <div id="connectionStatus" class="connection-status offline">
+                <span class="status-dot"></span>
+            </div>
+        </div>
+        <button class="btn-new-order-header" onclick="abrirFormEstudo()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Registrar Estudo
+        </button>
     </div>
 
-    <!-- INTERFACE PRINCIPAL -->
-    <div class="app-content" id="mainView">
-        <div class="container">
+    <!-- DASHBOARD -->
+    <div class="dashboard-grid">
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-warning">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value stat-value-warning" id="statPendente">0</div>
+                <div class="stat-label">Pendentes</div>
+            </div>
+        </div>
 
-            <!-- Header -->
-            <div class="header">
-                <div class="header-left">
-                    <h1>Jornada Acadêmica</h1>
-                    <div id="connectionStatus" class="connection-status offline">
-                        <span class="status-dot"></span>
-                    </div>
+        <div class="stat-card stat-card-danger" id="cardAtrasos" onclick="modalAtraso.open()" style="cursor:pointer" title="Ver estudos em atraso">
+            <div class="stat-icon stat-icon-danger">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value stat-value-danger" id="statAtraso">0</div>
+                <div class="stat-label">Em Atraso</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-success">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value stat-value-success" id="statConcluido">0</div>
+                <div class="stat-label">Concluídos</div>
+            </div>
+        </div>
+
+        <div class="stat-card" id="cardRevisoes" onclick="modalRevisoesAlert.open()" style="cursor:pointer" title="Ver revisões pendentes">
+            <div class="stat-icon stat-icon-info">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value stat-value-info" id="statRevisoes">0</div>
+                <div class="stat-label">Revisões Pendentes</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEARCH BAR -->
+    <div class="search-bar-wrapper">
+        <div class="search-bar">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="searchInput" placeholder="Pesquisar por curso, conteúdo..." oninput="filterEstudos()">
+
+            <div class="search-bar-filters">
+                <div class="filter-dropdown-inline">
+                    <select id="filterCurso" onchange="filterEstudos()">
+                        <option value="">Todos os Cursos</option>
+                    </select>
+                    <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                 </div>
-                <button onclick="abrirFormEstudo()" class="btn-new-order-header">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Registrar Estudo
+                <div class="filter-dropdown-inline">
+                    <select id="filterStatus" onchange="filterEstudos()">
+                        <option value="">Todos os Status</option>
+                        <option value="PENDENTE">Pendente</option>
+                        <option value="ATRASO">Em Atraso</option>
+                        <option value="CONCLUIDO">Concluído</option>
+                    </select>
+                    <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="month-navigation-inline">
+                    <button class="month-nav-arrow" onclick="changeMonth(-1)" title="Mês anterior">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                    </button>
+                    <div class="month-display-inline" id="currentMonthLabel">—</div>
+                    <button class="month-nav-arrow" onclick="changeMonth(1)" title="Próximo mês">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ÍCONES DE AÇÃO -->
+            <button class="calendar-btn" onclick="toggleCalendar()" title="Selecionar mês">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            </button>
+            <button class="calendar-btn" onclick="modalTodasRevisoes.open()" title="Todas as revisões">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            </button>
+            <button class="calendar-btn" onclick="modalBancoQuestoes.open()" title="Banco de questões">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </button>
+            <button class="calendar-btn" onclick="gerarPDF()" title="Gerar PDF do curso selecionado">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </button>
+            <button class="calendar-btn" onclick="sincronizar()" title="Sincronizar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- CALENDAR MODAL (dropdown) -->
+    <div class="calendar-modal" id="calendarModal">
+        <div class="calendar-content">
+            <div class="calendar-header">
+                <button class="calendar-year-nav" onclick="calYear--; renderCalendar()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                </button>
+                <h3 id="calendarYear">2026</h3>
+                <button class="calendar-year-nav" onclick="calYear++; renderCalendar()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
                 </button>
             </div>
-
-            <!-- Dashboard Cards -->
-            <div class="dashboard-grid">
-                <div class="stat-card">
-                    <div class="stat-icon stat-icon-warning">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value stat-value-warning" id="statPendente">0</div>
-                        <div class="stat-label">Pendentes</div>
-                    </div>
-                </div>
-
-                <div class="stat-card stat-card-danger" id="cardAtrasos" onclick="showAtrasosModal()" style="cursor:pointer;" title="Clique para ver detalhes">
-                    <div class="stat-icon stat-icon-danger">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <line x1="12" y1="8" x2="12" y2="12"></line>
-                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value stat-value-danger" id="statAtraso">0</div>
-                        <div class="stat-label">Em Atraso</div>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon stat-icon-success">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"></polyline>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value stat-value-success" id="statConcluido">0</div>
-                        <div class="stat-label">Concluídos</div>
-                    </div>
-                </div>
-
-                <div class="stat-card" id="cardRevisoes" onclick="showRevisoesModal()" style="cursor:pointer;" title="Clique para ver revisões pendentes">
-                    <div class="stat-icon stat-icon-info">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 4 23 10 17 10"></polyline>
-                            <polyline points="1 20 1 14 7 14"></polyline>
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value stat-value-info" id="statRevisoes">0</div>
-                        <div class="stat-label">Revisões Pendentes</div>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon stat-icon-default">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                        </svg>
-                    </div>
-                    <div class="stat-content">
-                        <div class="stat-value" id="statQuestoes">0</div>
-                        <div class="stat-label">Questões Pendentes</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Search Bar com Filtros -->
-            <div class="search-bar-wrapper">
-                <div class="search-bar">
-                    <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
-                    </svg>
-                    <input type="text" id="searchInput" placeholder="Pesquisar por curso, conteúdo..." oninput="filterEstudos()">
-
-                    <div class="search-bar-filters">
-                        <div class="filter-dropdown-inline">
-                            <select id="filterCurso" onchange="filterEstudos()">
-                                <option value="">Todos os Cursos</option>
-                            </select>
-                            <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </div>
-                        <div class="filter-dropdown-inline">
-                            <select id="filterStatus" onchange="filterEstudos()">
-                                <option value="">Todos os Status</option>
-                                <option value="PENDENTE">Pendente</option>
-                                <option value="ATRASO">Em Atraso</option>
-                                <option value="CONCLUIDO">Concluído</option>
-                            </select>
-                            <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6 9 12 15 18 9"></polyline>
-                            </svg>
-                        </div>
-                        <div class="month-navigation-inline">
-                            <button onclick="changeMonth(-1)" class="month-nav-arrow" title="Mês anterior">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="15 18 9 12 15 6"></polyline>
-                                </svg>
-                            </button>
-                            <div class="month-display-inline">
-                                <span id="currentMonthLabel">Carregando...</span>
-                            </div>
-                            <button onclick="changeMonth(1)" class="month-nav-arrow" title="Próximo mês">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="9 18 15 12 9 6"></polyline>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <button class="calendar-btn" onclick="toggleCalendar()" title="Selecionar mês">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                            <line x1="16" y1="2" x2="16" y2="6"></line>
-                            <line x1="8" y1="2" x2="8" y2="6"></line>
-                            <line x1="3" y1="10" x2="21" y2="10"></line>
-                        </svg>
-                    </button>
-                    <button class="calendar-btn" onclick="abrirViewRevisoes()" title="Ver todas as revisões">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <polyline points="23 4 23 10 17 10"></polyline>
-                            <polyline points="1 20 1 14 7 14"></polyline>
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                        </svg>
-                    </button>
-                    <button class="calendar-btn" onclick="abrirViewQuestoes()" title="Banco de questões">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                        </svg>
-                    </button>
-                    <button class="calendar-btn" onclick="sincronizar()" title="Sincronizar dados">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <polyline points="23 4 23 10 17 10"></polyline>
-                            <polyline points="1 20 1 14 7 14"></polyline>
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Calendar Modal -->
-            <div class="calendar-modal" id="calendarModal">
-                <div class="calendar-content">
-                    <div class="calendar-header">
-                        <button onclick="changeCalendarYear(-1)" class="calendar-year-nav">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="15 18 9 12 15 6"></polyline>
-                            </svg>
-                        </button>
-                        <h3 id="calendarYear">2026</h3>
-                        <button onclick="changeCalendarYear(1)" class="calendar-year-nav">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="9 18 15 12 9 6"></polyline>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="calendar-months" id="calendarMonths"></div>
-                </div>
-            </div>
-
-            <!-- Tabela de Estudos -->
-            <div class="card table-card">
-                <div id="estudosContainer"></div>
-            </div>
-
+            <div class="calendar-months" id="calendarMonths"></div>
         </div>
     </div>
 
-    <!-- ========== MODAL: FORM ESTUDO ========== -->
-    <div class="modal-overlay" id="modalEstudo" style="display:none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="modalEstudoTitle">Registrar Estudo</h3>
-                <button class="close-modal" onclick="fecharModalEstudo()">✕</button>
-            </div>
-            <form id="formEstudo" onsubmit="submitEstudo(event)">
-                <input type="hidden" id="estudoId">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Curso *</label>
-                        <input type="text" id="fCurso" placeholder="Ex: Engenharia de Software" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Unidade</label>
-                        <input type="text" id="fUnidade" placeholder="Ex: Unidade 3 — Estruturas de Dados">
-                    </div>
-                    <div class="form-group">
-                        <label>Conteúdo *</label>
-                        <input type="text" id="fConteudo" placeholder="Ex: Algoritmos de Ordenação" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Data de Início *</label>
-                        <input type="date" id="fDataInicio" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Data de Término</label>
-                        <input type="date" id="fDataTermino">
-                    </div>
-                    <div class="form-group">
-                        <label>Observação</label>
-                        <textarea id="fObservacao" rows="3" placeholder="Anotações sobre este estudo..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" onclick="fecharModalEstudo()" class="secondary">Cancelar</button>
-                    <button type="submit" class="success">Salvar</button>
-                </div>
-            </form>
-        </div>
+    <!-- TABELA ESTUDOS -->
+    <div class="card table-card">
+        <div id="estudosContainer"></div>
     </div>
 
-    <!-- ========== MODAL: DETALHES DO ESTUDO ========== -->
-    <div class="modal-overlay" id="modalDetalhe" style="display:none;">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h3 class="modal-title" id="detalheTitle">Detalhes do Estudo</h3>
-                <button class="close-modal" onclick="fecharModalDetalhe()">✕</button>
+</div><!-- /container -->
+</div><!-- /app-content -->
+
+
+<!-- ====================================================
+     MODAIS — cada um com ID único e classe modal-overlay
+     ==================================================== -->
+
+<!-- MODAL: FORM ESTUDO -->
+<div class="modal-overlay" id="modalFormEstudo">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="tituloFormEstudo">Registrar Estudo</h3>
+            <button class="close-modal" onclick="fecharModal('modalFormEstudo')">&#x2715;</button>
+        </div>
+        <form onsubmit="submitEstudo(event)">
+            <input type="hidden" id="estudoId">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="fCurso">Curso *</label>
+                    <input type="text" id="fCurso" placeholder="Ex: Matemática" required>
+                </div>
+                <div class="form-group">
+                    <label for="fUnidade">Unidade</label>
+                    <input type="text" id="fUnidade" placeholder="Ex: Unidade 2">
+                </div>
+                <div class="form-group">
+                    <label for="fConteudo">Conteúdo *</label>
+                    <input type="text" id="fConteudo" placeholder="Ex: Frações" required>
+                </div>
+                <div class="form-group">
+                    <label for="fDataTermino">Data de Término</label>
+                    <input type="date" id="fDataTermino">
+                </div>
+                <div class="form-group full">
+                    <label for="fObservacao">Observação</label>
+                    <textarea id="fObservacao" rows="2" placeholder="Anotações sobre este estudo..."></textarea>
+                </div>
             </div>
-            <div class="modal-body" id="detalheBody"></div>
             <div class="modal-actions">
-                <button type="button" onclick="fecharModalDetalhe()" class="secondary">Fechar</button>
-                <button type="button" id="btnEditarDetalhe" class="edit">Editar</button>
+                <button type="button" class="secondary" onclick="fecharModal('modalFormEstudo')">Cancelar</button>
+                <button type="submit" class="success">Salvar</button>
             </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: DETALHE DO ESTUDO -->
+<div class="modal-overlay" id="modalDetalhe">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3 class="modal-title" id="detalheTitle">Detalhes</h3>
+            <button class="close-modal" onclick="fecharModal('modalDetalhe')">&#x2715;</button>
+        </div>
+        <div id="detalheBody"></div>
+        <div class="modal-actions">
+            <button class="secondary" onclick="fecharModal('modalDetalhe')">Fechar</button>
+            <button class="action-btn edit" id="btnEditarDetalhe">Editar</button>
         </div>
     </div>
+</div>
 
-    <!-- ========== MODAL: FORM REVISÃO ========== -->
-    <div class="modal-overlay" id="modalRevisao" style="display:none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Agendar Revisão</h3>
-                <button class="close-modal" onclick="fecharModalRevisao()">✕</button>
-            </div>
-            <form id="formRevisao" onsubmit="submitRevisao(event)">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Estudo *</label>
-                        <select id="fRevisaoEstudo" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label>Data da Revisão *</label>
-                        <input type="date" id="fRevisaoData" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Tipo de Revisão</label>
-                        <select id="fRevisaoTipo">
-                            <option value="REVISAO_1">1ª Revisão</option>
-                            <option value="REVISAO_2">2ª Revisão</option>
-                            <option value="REVISAO_3">3ª Revisão</option>
-                            <option value="REVISAO_FINAL">Revisão Final</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Anotações</label>
-                        <textarea id="fRevisaoNota" rows="3" placeholder="Observações sobre a revisão..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" onclick="fecharModalRevisao()" class="secondary">Cancelar</button>
-                    <button type="submit" class="success">Agendar</button>
-                </div>
-            </form>
+<!-- MODAL: FORM REVISÃO -->
+<div class="modal-overlay" id="modalFormRevisao">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Agendar Revisão</h3>
+            <button class="close-modal" onclick="fecharModal('modalFormRevisao')">&#x2715;</button>
         </div>
-    </div>
-
-    <!-- ========== MODAL: FORM QUESTÃO ========== -->
-    <div class="modal-overlay" id="modalQuestao" style="display:none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Registrar Questão</h3>
-                <button class="close-modal" onclick="fecharModalQuestao()">✕</button>
-            </div>
-            <form id="formQuestao" onsubmit="submitQuestao(event)">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Estudo / Conteúdo *</label>
-                        <select id="fQuestaoEstudo" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label>Dificuldade</label>
-                        <select id="fDificuldade">
-                            <option value="BAIXA">Baixa</option>
-                            <option value="MEDIA" selected>Média</option>
-                            <option value="ALTA">Alta</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="grid-column:1/-1">
-                        <label>Pergunta / Questão *</label>
-                        <textarea id="fQuestaoPergunta" rows="3" required placeholder="Escreva a questão ou tópico que errou..."></textarea>
-                    </div>
-                    <div class="form-group" style="grid-column:1/-1">
-                        <label>Resposta / Resolução</label>
-                        <textarea id="fQuestaoResposta" rows="3" placeholder="Resposta correta ou explicação detalhada..."></textarea>
-                    </div>
+        <form onsubmit="submitRevisao(event)">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label for="fRevEstudo">Estudo *</label>
+                    <select id="fRevEstudo" required></select>
                 </div>
-                <div class="modal-actions">
-                    <button type="button" onclick="fecharModalQuestao()" class="secondary">Cancelar</button>
-                    <button type="submit" class="success">Salvar</button>
+                <div class="form-group">
+                    <label for="fRevData">Data *</label>
+                    <input type="date" id="fRevData" required>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ========== MODAL: TODAS AS REVISÕES ========== -->
-    <div class="modal-overlay" id="modalTodasRevisoes" style="display:none;">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h3 class="modal-title">Todas as Revisões</h3>
-                <button class="close-modal" onclick="document.getElementById('modalTodasRevisoes').style.display='none'">✕</button>
+                <div class="form-group">
+                    <label for="fRevTipo">Tipo</label>
+                    <select id="fRevTipo">
+                        <option value="REVISAO_1">1ª Revisão</option>
+                        <option value="REVISAO_2">2ª Revisão</option>
+                        <option value="REVISAO_3">3ª Revisão</option>
+                        <option value="REVISAO_FINAL">Revisão Final</option>
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label for="fRevNota">Anotações</label>
+                    <textarea id="fRevNota" rows="2" placeholder="Observações..."></textarea>
+                </div>
             </div>
-            <div class="modal-body" id="todasRevisoesBody"></div>
             <div class="modal-actions">
-                <button type="button" onclick="document.getElementById('modalTodasRevisoes').style.display='none'" class="secondary">Fechar</button>
-                <button type="button" onclick="abrirFormRevisao()" class="success">+ Agendar Revisão</button>
+                <button type="button" class="secondary" onclick="fecharModal('modalFormRevisao')">Cancelar</button>
+                <button type="submit" class="success">Agendar</button>
             </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: FORM QUESTÃO -->
+<div class="modal-overlay" id="modalFormQuestao">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Registrar Questão</h3>
+            <button class="close-modal" onclick="fecharModal('modalFormQuestao')">&#x2715;</button>
+        </div>
+        <form onsubmit="submitQuestao(event)">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label for="fQuestaoEstudo">Estudo / Conteúdo *</label>
+                    <select id="fQuestaoEstudo" required></select>
+                </div>
+                <!-- TIPO TABS -->
+                <div class="form-group full">
+                    <label>Tipo de Questão</label>
+                    <div class="tipo-questao-tabs">
+                        <button type="button" class="tipo-tab active" id="tabObjetiva" onclick="setTipoQuestao('objetiva')">Objetiva (A B C D E)</button>
+                        <button type="button" class="tipo-tab" id="tabDiscursiva" onclick="setTipoQuestao('discursiva')">Discursiva</button>
+                    </div>
+                </div>
+                <div class="form-group full">
+                    <label for="fEnunciado">Enunciado / Questão *</label>
+                    <textarea id="fEnunciado" rows="3" required placeholder="Escreva o enunciado da questão..."></textarea>
+                </div>
+                <!-- ALTERNATIVAS (objetiva) -->
+                <div class="form-group full" id="blockoAlternativas">
+                    <label>Alternativas</label>
+                    <div id="alternativasContainer">
+                        <!-- gerado pelo JS -->
+                    </div>
+                </div>
+                <!-- GABARITO (objetiva) — seleção de rádio, mostrada acima nas alternativas -->
+                <!-- RESPOSTA CORRETA / JUSTIFICATIVA (discursiva) -->
+                <div class="form-group full" id="blockoResposta" style="display:none">
+                    <label for="fRespostaDiscursiva">Resposta / Justificativa Correta *</label>
+                    <textarea id="fRespostaDiscursiva" rows="3" placeholder="Escreva a resposta esperada ou a justificativa correta..."></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="secondary" onclick="fecharModal('modalFormQuestao')">Cancelar</button>
+                <button type="submit" class="success">Salvar Questão</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: TODAS AS REVISÕES -->
+<div class="modal-overlay" id="modalTodasRevisoes">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3 class="modal-title">Todas as Revisões</h3>
+            <button class="close-modal" onclick="fecharModal('modalTodasRevisoes')">&#x2715;</button>
+        </div>
+        <div id="todasRevisoesBody"></div>
+        <div class="modal-actions">
+            <button class="secondary" onclick="fecharModal('modalTodasRevisoes')">Fechar</button>
+            <button class="success" onclick="fecharModal('modalTodasRevisoes'); abrirFormRevisao()">Nova Revisão</button>
         </div>
     </div>
+</div>
 
-    <!-- ========== MODAL: BANCO DE QUESTÕES ========== -->
-    <div class="modal-overlay" id="modalBancoQuestoes" style="display:none;">
-        <div class="modal-content large">
-            <div class="modal-header">
-                <h3 class="modal-title">Banco de Questões</h3>
-                <button class="close-modal" onclick="document.getElementById('modalBancoQuestoes').style.display='none'">✕</button>
-            </div>
-            <div style="padding: 0 0 1rem 0; display:flex; gap:0.75rem; flex-wrap:wrap;">
-                <input type="text" id="searchQuestao" placeholder="Pesquisar questões..." oninput="renderBancoQuestoes()" style="flex:1; min-width:200px; margin:0;">
-                <select id="filterQuestaoStatus" onchange="renderBancoQuestoes()" style="width:160px; margin:0;">
+<!-- MODAL: BANCO DE QUESTÕES -->
+<div class="modal-overlay" id="modalBancoQuestoes">
+    <div class="modal-content large">
+        <div class="modal-header">
+            <h3 class="modal-title">Banco de Questões</h3>
+            <button class="close-modal" onclick="fecharModal('modalBancoQuestoes')">&#x2715;</button>
+        </div>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;">
+            <input type="text" id="searchQuestao" placeholder="Pesquisar questões..." oninput="renderBancoQuestoes()" style="flex:1;min-width:180px;">
+            <div class="filter-dropdown-inline" style="min-width:140px;">
+                <select id="filterQuestaoStatus" onchange="renderBancoQuestoes()">
                     <option value="">Todas</option>
                     <option value="PENDENTE">Pendentes</option>
                     <option value="FEITA">Feitas</option>
                 </select>
-                <select id="filterQuestaoCurso" onchange="renderBancoQuestoes()" style="width:200px; margin:0;">
+                <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="filter-dropdown-inline" style="min-width:160px;">
+                <select id="filterQuestaoCurso" onchange="renderBancoQuestoes()">
                     <option value="">Todos os Cursos</option>
                 </select>
-            </div>
-            <div class="modal-body" id="bancoQuestoesBody"></div>
-            <div class="modal-actions">
-                <button type="button" onclick="document.getElementById('modalBancoQuestoes').style.display='none'" class="secondary">Fechar</button>
-                <button type="button" onclick="abrirFormQuestao()" class="success">+ Registrar Questão</button>
+                <svg class="dropdown-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
         </div>
-    </div>
-
-    <!-- ========== MODAL: ATRASOS ========== -->
-    <div class="modal-overlay" id="modalAtrasos" style="display:none;">
-        <div class="modal-content alert-modal">
-            <div class="modal-header-alert">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                    <line x1="12" y1="9" x2="12" y2="13"></line>
-                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-                <button class="close-modal" onclick="document.getElementById('modalAtrasos').style.display='none'">✕</button>
-            </div>
-            <div class="modal-body" id="atrasosBody"></div>
-            <div class="modal-actions-alert">
-                <button type="button" onclick="document.getElementById('modalAtrasos').style.display='none'" class="btn-close-red">Fechar</button>
-            </div>
+        <div id="bancoQuestoesBody"></div>
+        <div class="modal-actions">
+            <button class="secondary" onclick="fecharModal('modalBancoQuestoes')">Fechar</button>
+            <button class="success" onclick="fecharModal('modalBancoQuestoes'); abrirFormQuestao()">Nova Questão</button>
         </div>
     </div>
+</div>
 
-    <!-- ========== MODAL: REVISÕES PENDENTES ========== -->
-    <div class="modal-overlay" id="modalRevisoesPendentes" style="display:none;">
-        <div class="modal-content alert-modal">
-            <div class="modal-header-alert">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2">
-                    <polyline points="23 4 23 10 17 10"></polyline>
-                    <polyline points="1 20 1 14 7 14"></polyline>
-                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                </svg>
-                <button class="close-modal" onclick="document.getElementById('modalRevisoesPendentes').style.display='none'">✕</button>
-            </div>
-            <div class="modal-body" id="revisoesPendentesBody"></div>
-            <div class="modal-actions-alert">
-                <button type="button" onclick="document.getElementById('modalRevisoesPendentes').style.display='none'" class="btn-close-red">Fechar</button>
-            </div>
+<!-- MODAL: ATRASOS -->
+<div class="modal-overlay" id="modalAtraso">
+    <div class="modal-content alert-modal">
+        <div class="modal-header-alert">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <button class="close-modal" onclick="fecharModal('modalAtraso')">&#x2715;</button>
+        </div>
+        <div id="atrasosBody"></div>
+        <div class="modal-actions-alert">
+            <button class="btn-close-red" onclick="fecharModal('modalAtraso')">Fechar</button>
         </div>
     </div>
+</div>
 
-    <!-- ========== MODAL: CONFIRMAÇÃO ========== -->
-    <div class="modal-overlay" id="confirmModal" style="display:none;">
-        <div class="modal-content confirm-modal-content">
-            <div class="confirm-modal-body">
-                <p class="confirm-modal-title" id="confirmMessage">Tem certeza?</p>
-            </div>
-            <div class="confirm-modal-actions">
-                <button type="button" id="confirmCancel" class="secondary">Cancelar</button>
-                <button type="button" id="confirmOk" style="background:var(--btn-delete)">Confirmar</button>
-            </div>
+<!-- MODAL: REVISÕES PENDENTES (alert) -->
+<div class="modal-overlay" id="modalRevisoesAlert">
+    <div class="modal-content alert-modal">
+        <div class="modal-header-alert">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <button class="close-modal" onclick="fecharModal('modalRevisoesAlert')">&#x2715;</button>
+        </div>
+        <div id="revisoesAlertBody"></div>
+        <div class="modal-actions-alert">
+            <button class="btn-close-red" onclick="fecharModal('modalRevisoesAlert')">Fechar</button>
         </div>
     </div>
+</div>
 
-    <script src="script.js"></script>
-    <script src="calendar.js"></script>
+<!-- MODAL: CONFIRMAÇÃO -->
+<div class="modal-overlay" id="modalConfirm">
+    <div class="modal-content compact">
+        <div class="modal-header" style="border-bottom:none;margin-bottom:0;">
+            <span></span>
+            <button class="close-modal" onclick="confirmResolve(false)">&#x2715;</button>
+        </div>
+        <div class="confirm-modal-body">
+            <p class="confirm-modal-title" id="confirmMsg">Tem certeza?</p>
+        </div>
+        <div class="confirm-modal-actions">
+            <button class="secondary" onclick="confirmResolve(false)">Cancelar</button>
+            <button class="danger"    onclick="confirmResolve(true)">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
