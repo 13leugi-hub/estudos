@@ -342,7 +342,7 @@ input::placeholder, textarea::placeholder { color: var(--text-secondary); }
     font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
     background: var(--input-bg); border: none; transition: all 0.2s;
 }
-.tipo-tab.active { background: var(--primary); color: white; }
+.tipo-tab.active { background: var(--th-bg); color: white; }
 .tipo-tab:first-child { border-right: 1px solid var(--border-color); }
 
 .alternativa-row {
@@ -355,8 +355,6 @@ input::placeholder, textarea::placeholder { color: var(--text-secondary); }
     font-weight: 700; font-size: 0.8rem; flex-shrink: 0;
 }
 .alternativa-row input[type="text"] { flex: 1; margin: 0; padding: 8px 12px; }
-.radio-correta { display: flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--text-secondary); flex-shrink: 0; }
-.radio-correta input[type="radio"] { width: auto; margin: 0; cursor: pointer; accent-color: var(--success-color); }
 
 /* GABARITO DISPLAY */
 .gabarito-box {
@@ -368,6 +366,8 @@ input::placeholder, textarea::placeholder { color: var(--text-secondary); }
 .alt-display .l { font-weight: 700; min-width: 20px; color: var(--text-secondary); }
 .alt-display.correta .l { color: var(--success-color); }
 .alt-display.correta { font-weight: 500; }
+
+
 
 /* BUTTONS */
 button {
