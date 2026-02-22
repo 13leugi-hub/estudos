@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jornada Acadêmica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-inner">
+            <div class="splash-icon">🎓</div>
+            <div class="splash-title">Jornada Acadêmica</div>
+            <div class="splash-loader"><div class="loader-bar"></div></div>
+        </div>
+    </div>
+
+    <!-- INTERFACE PRINCIPAL -->
+    <div class="app-content" id="mainView">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <span class="brand-icon">🎓</span>
+                <span class="brand-name">Jornada<br><strong>Acadêmica</strong></span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-view="estudos" onclick="switchView('estudos', this)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                    Estudos
+                </a>
+                <a href="#" class="nav-item" data-view="revisoes" onclick="switchView('revisoes', this)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                    Revisões
+                </a>
+                <a href="#" class="nav-item" data-view="questoes" onclick="switchView('questoes', this)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    Questões
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div id="connectionStatus" class="conn-status">
+                    <span class="conn-dot"></span>
+                    <span class="conn-label">Offline</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- ===== VIEW: ESTUDOS ===== -->
+            <div id="view-estudos" class="view active">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Estudos</h1>
+                        <p class="page-subtitle" id="currentMonthLabel">Carregando...</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-icon" onclick="changeMonth(-1)" title="Mês anterior">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                        </button>
+                        <button class="btn-icon" onclick="changeMonth(1)" title="Próximo mês">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                        </button>
+                        <button class="btn-icon" onclick="sincronizar()" title="Sincronizar">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        </button>
+                        <button class="btn-primary" onclick="abrirFormEstudo()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            Novo Estudo
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-icon pending-icon">📚</div>
+                        <div>
+                            <div class="stat-num" id="statPendente">0</div>
+                            <div class="stat-lbl">Pendentes</div>
+                        </div>
+                    </div>
+                    <div class="stat-card clickable" onclick="showAtrasosModal()">
+                        <div class="stat-icon danger-icon">⏰</div>
+                        <div>
+                            <div class="stat-num danger" id="statAtraso">0</div>
+                            <div class="stat-lbl">Em Atraso</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon success-icon">✅</div>
+                        <div>
+                            <div class="stat-num success" id="statConcluido">0</div>
+                            <div class="stat-lbl">Concluídos</div>
+                        </div>
+                    </div>
+                    <div class="stat-card clickable" onclick="showRevisoesModal()">
+                        <div class="stat-icon info-icon">🔄</div>
+                        <div>
+                            <div class="stat-num info" id="statRevisoes">0</div>
+                            <div class="stat-lbl">Revisões Pendentes</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search & Filters -->
+                <div class="search-section">
+                    <div class="search-input-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                        <input type="text" id="searchInput" placeholder="Pesquisar por curso, conteúdo..." oninput="filterEstudos()">
+                    </div>
+                    <select id="filterCurso" onchange="filterEstudos()">
+                        <option value="">Todos os Cursos</option>
+                    </select>
+                    <select id="filterStatus" onchange="filterEstudos()">
+                        <option value="">Todos os Status</option>
+                        <option value="PENDENTE">Pendente</option>
+                        <option value="ATRASO">Em Atraso</option>
+                        <option value="CONCLUIDO">Concluído</option>
+                    </select>
+                </div>
+
+                <!-- Table -->
+                <div class="card">
+                    <div id="estudosContainer">
+                        <div class="empty-state">
+                            <div class="empty-icon">📖</div>
+                            <p>Nenhum estudo registrado</p>
+                            <button class="btn-primary" onclick="abrirFormEstudo()">Registrar primeiro estudo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== VIEW: REVISÕES ===== -->
+            <div id="view-revisoes" class="view">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Revisões</h1>
+                        <p class="page-subtitle">Agenda de revisões programadas</p>
+                    </div>
+                    <button class="btn-primary" onclick="abrirFormRevisao()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        Agendar Revisão
+                    </button>
+                </div>
+                <div class="card">
+                    <div id="revisoesContainer">
+                        <div class="empty-state">
+                            <div class="empty-icon">🔄</div>
+                            <p>Nenhuma revisão agendada</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== VIEW: QUESTÕES ===== -->
+            <div id="view-questoes" class="view">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Banco de Questões</h1>
+                        <p class="page-subtitle">Questões erradas para revisão</p>
+                    </div>
+                    <button class="btn-primary" onclick="abrirFormQuestao()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        Registrar Questão
+                    </button>
+                </div>
+                <div class="search-section">
+                    <div class="search-input-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                        <input type="text" id="searchQuestao" placeholder="Pesquisar questões..." oninput="filterQuestoes()">
+                    </div>
+                    <select id="filterQuestaoStatus" onchange="filterQuestoes()">
+                        <option value="">Todas</option>
+                        <option value="PENDENTE">Pendentes</option>
+                        <option value="FEITA">Feitas</option>
+                    </select>
+                    <select id="filterQuestaoCurso" onchange="filterQuestoes()">
+                        <option value="">Todos os Cursos</option>
+                    </select>
+                </div>
+                <div class="card">
+                    <div id="questoesContainer">
+                        <div class="empty-state">
+                            <div class="empty-icon">❓</div>
+                            <p>Nenhuma questão registrada</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- =========== MODAL: FORM ESTUDO =========== -->
+    <div class="modal-overlay" id="modalEstudo" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 id="modalEstudoTitle">Registrar Estudo</h3>
+                <button class="btn-close" onclick="fecharModalEstudo()">✕</button>
+            </div>
+            <form id="formEstudo" onsubmit="submitEstudo(event)">
+                <input type="hidden" id="estudoId">
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>Curso *</label>
+                        <input type="text" id="fCurso" placeholder="Ex: Engenharia de Software" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Unidade</label>
+                        <input type="text" id="fUnidade" placeholder="Ex: Unidade 3">
+                    </div>
+                    <div class="form-group">
+                        <label>Conteúdo *</label>
+                        <input type="text" id="fConteudo" placeholder="Ex: Algoritmos de Ordenação" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Data de Início *</label>
+                        <input type="date" id="fDataInicio" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Data de Término</label>
+                        <input type="date" id="fDataTermino">
+                    </div>
+                    <div class="form-group full">
+                        <label>Observação</label>
+                        <textarea id="fObservacao" rows="3" placeholder="Anotações sobre este estudo..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="fecharModalEstudo()" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =========== MODAL: DETALHES ESTUDO =========== -->
+    <div class="modal-overlay" id="modalDetalhe" style="display:none;">
+        <div class="modal-box modal-large">
+            <div class="modal-head">
+                <h3 id="detalheTitle">Detalhes do Estudo</h3>
+                <button class="btn-close" onclick="fecharModalDetalhe()">✕</button>
+            </div>
+            <div id="detalheBody"></div>
+            <div class="modal-actions">
+                <button type="button" onclick="fecharModalDetalhe()" class="btn-secondary">Fechar</button>
+                <button type="button" id="btnEditarDetalhe" class="btn-primary">Editar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== MODAL: FORM REVISÃO =========== -->
+    <div class="modal-overlay" id="modalRevisao" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>Agendar Revisão</h3>
+                <button class="btn-close" onclick="fecharModalRevisao()">✕</button>
+            </div>
+            <form id="formRevisao" onsubmit="submitRevisao(event)">
+                <input type="hidden" id="revisaoEstudoId">
+                <input type="hidden" id="revisaoIndex" value="-1">
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>Estudo *</label>
+                        <select id="fRevisaoEstudo" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Data da Revisão *</label>
+                        <input type="date" id="fRevisaoData" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo</label>
+                        <select id="fRevisaoTipo">
+                            <option value="REVISAO_1">1ª Revisão</option>
+                            <option value="REVISAO_2">2ª Revisão</option>
+                            <option value="REVISAO_3">3ª Revisão</option>
+                            <option value="REVISAO_FINAL">Revisão Final</option>
+                        </select>
+                    </div>
+                    <div class="form-group full">
+                        <label>Anotações</label>
+                        <textarea id="fRevisaoNota" rows="2" placeholder="Anotações sobre a revisão..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="fecharModalRevisao()" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Agendar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =========== MODAL: FORM QUESTÃO =========== -->
+    <div class="modal-overlay" id="modalQuestao" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>Registrar Questão</h3>
+                <button class="btn-close" onclick="fecharModalQuestao()">✕</button>
+            </div>
+            <form id="formQuestao" onsubmit="submitQuestao(event)">
+                <input type="hidden" id="questaoEstudoId">
+                <input type="hidden" id="questaoIndex" value="-1">
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>Estudo / Conteúdo *</label>
+                        <select id="fQuestaoEstudo" required onchange="populateQuestaoCurso()"></select>
+                    </div>
+                    <div class="form-group full">
+                        <label>Pergunta / Questão *</label>
+                        <textarea id="fQuestaoPergunta" rows="3" required placeholder="Escreva a questão ou tópico que errou..."></textarea>
+                    </div>
+                    <div class="form-group full">
+                        <label>Resposta / Resolução</label>
+                        <textarea id="fQuestaoResposta" rows="3" placeholder="Resposta correta ou explicação..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Dificuldade</label>
+                        <select id="fDificuldade">
+                            <option value="BAIXA">Baixa</option>
+                            <option value="MEDIA" selected>Média</option>
+                            <option value="ALTA">Alta</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="fecharModalQuestao()" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- =========== MODAL: ALERTAS ATRASO =========== -->
+    <div class="modal-overlay" id="modalAtrasos" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>⚠️ Estudos em Atraso</h3>
+                <button class="btn-close" onclick="document.getElementById('modalAtrasos').style.display='none'">✕</button>
+            </div>
+            <div id="atrasosBody"></div>
+            <div class="modal-actions">
+                <button type="button" onclick="document.getElementById('modalAtrasos').style.display='none'" class="btn-secondary">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== MODAL: REVISÕES PENDENTES =========== -->
+    <div class="modal-overlay" id="modalRevisoesPendentes" style="display:none;">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3>🔄 Revisões Pendentes</h3>
+                <button class="btn-close" onclick="document.getElementById('modalRevisoesPendentes').style.display='none'">✕</button>
+            </div>
+            <div id="revisoesPendentesBody"></div>
+            <div class="modal-actions">
+                <button type="button" onclick="document.getElementById('modalRevisoesPendentes').style.display='none'" class="btn-secondary">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========== CONFIRM MODAL =========== -->
+    <div class="modal-overlay" id="confirmModal" style="display:none;">
+        <div class="modal-box modal-small">
+            <div class="modal-head">
+                <h3 id="confirmTitle">Confirmar</h3>
+            </div>
+            <p id="confirmMessage" style="padding: 0 1.5rem 1rem; color: var(--text-secondary);"></p>
+            <div class="modal-actions">
+                <button type="button" id="confirmCancel" class="btn-secondary">Cancelar</button>
+                <button type="button" id="confirmOk" class="btn-danger">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
