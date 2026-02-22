@@ -21,7 +21,12 @@ app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','PATCH','OPTIO
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use((req, _res, next) => { console.log(`${new Date().toISOString()} ${req.method} ${req.path}`); next(); });
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve frontend files — coloque index.html, styles.css, script.js na pasta public/
+// OU na raiz do projeto (ambos funcionam)
+const publicDir = path.join(__dirname, 'public');
+const rootDir   = __dirname;
+app.use(express.static(publicDir));
+app.use(express.static(rootDir));
 
 /* HEALTH */
 app.get('/health', async (_req, res) => {
@@ -110,7 +115,7 @@ app.delete('/api/estudos/:id', async (req, res) => {
     res.json({ ok: true });
 });
 
-app.get('/', (_req, res) => res.json({ service: 'Jornada Acadêmica API', version: '3.0.0' }));
+app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.use((_req, res) => res.status(404).json({ error: 'Não encontrado' }));
 
 app.listen(PORT, '0.0.0.0', () => {
