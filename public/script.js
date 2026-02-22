@@ -2,7 +2,8 @@
    JORNADA ACADÊMICA — script.js v3
    ============================================================ */
 
-const API_URL = window.location.origin + '/api';
+// API URL — ajuste se necessário (ex: 'https://meuapp.onrender.com/api')
+const API_URL = (window.location.origin.startsWith('http') ? window.location.origin : '') + '/api';
 
 let estudos = [];
 let currentMonth = new Date();
@@ -628,10 +629,25 @@ function buildAlternativasUI() {
         <div class="alternativa-row">
             <div class="letra-circulo">${l}</div>
             <input type="text" id="alt_${l}" placeholder="Alternativa ${l}...">
-            <label class="radio-correta">
-                <input type="radio" name="gabaritoRadio" value="${l}" ${i===0?'checked':''}> Correta
-            </label>
+            <div class="checkbox-wrapper" style="flex-shrink:0">
+                <input type="checkbox" class="styled-checkbox chk-gabarito" id="gab_${l}" value="${l}" ${i===0?'checked':''}>
+                <label class="checkbox-label-styled" for="gab_${l}"></label>
+            </div>
         </div>`).join('');
+
+    // Comportamento exclusivo: só um marcado por vez
+    cont.addEventListener('change', function(e) {
+        if (!e.target.classList.contains('chk-gabarito')) return;
+        if (e.target.checked) {
+            cont.querySelectorAll('.chk-gabarito').forEach(cb => {
+                if (cb !== e.target) cb.checked = false;
+            });
+        } else {
+            // Impede desmarcar sem ter outro marcado
+            const algum = [...cont.querySelectorAll('.chk-gabarito')].some(cb => cb.checked);
+            if (!algum) e.target.checked = true;
+        }
+    });
 }
 
 window.abrirFormQuestao = function() {
@@ -664,7 +680,7 @@ window.submitQuestao = async function(ev) {
 
     if (tipoQuestaoAtual === 'objetiva') {
         const alts = LETRAS.map(l => (document.getElementById(`alt_${l}`)?.value || '').trim());
-        const gab = document.querySelector('input[name="gabaritoRadio"]:checked')?.value || 'A';
+        const gab = document.querySelector('.chk-gabarito:checked')?.value || 'A';
         if (!alts[LETRAS.indexOf(gab)]) { toast('Preencha a alternativa correta', 'error'); return; }
         novaQ.alternativas = alts;
         novaQ.gabarito = gab;
