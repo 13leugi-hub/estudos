@@ -1,5 +1,5 @@
 /* ============================================================
-   JORNADA ACADÊMICA — script.js v2 (com fila offline)
+   JORNADA ACADÊMICA — script.js v2.1 (com logs e ajustes)
    ============================================================ */
 
 const API_URL = (window.location.origin.startsWith('http') ? window.location.origin : '') + '/api';
@@ -169,13 +169,14 @@ async function carregarEstudos() {
         localStorage.setItem('ja_cache', JSON.stringify(estudos));
         setOnline(true);
         document.getElementById('splashScreen').style.display = 'none';
+        console.log('Estudos carregados:', estudos.length);
     } catch (err) {
         console.error('Falha na API:', err);
         setOnline(false);
         const c = localStorage.getItem('ja_cache');
         if (c) {
             estudos = JSON.parse(c);
-            console.info('Usando cache local.');
+            console.info('Usando cache local com', estudos.length, 'estudos.');
         }
         document.getElementById('splashScreen').style.display = 'none';
         if (estudos.length === 0) {
@@ -380,11 +381,7 @@ let ordem = { coluna: null, crescente: true };
 function ordenarPor(col) {
     if (ordem.coluna === col) ordem.crescente = !ordem.crescente;
     else { ordem.coluna = col; ordem.crescente = true; }
-    // Reordena a lista atual (não filtra novamente)
-    const listaAtual = estudos.filter(e => {
-        // aplica os mesmos filtros de filterEstudos? melhor reaplicar filtro completo
-        filterEstudos(); // isso já re-renderiza baseado nos filtros e mês
-    });
+    filterEstudos(); // reaplica filtro (que já renderiza)
 }
 
 /* ============================================================
@@ -565,6 +562,7 @@ window.submitEstudo = async function(ev) {
         if (id) {
             try {
                 saved = await apiPatch(id, payload);
+                toast('Estudo atualizado', 'success');
             } catch {
                 // Se falhou (offline), adiciona à fila e simula salvamento local
                 adicionarNaFila('update', payload, id);
@@ -575,6 +573,8 @@ window.submitEstudo = async function(ev) {
         } else {
             try {
                 saved = await apiCreate(payload);
+                toast('Estudo registrado com sucesso!', 'success');
+                console.log('Estudo criado:', saved);
             } catch {
                 const tempId = 'temp_' + Date.now();
                 saved = { ...payload, id: tempId, created_at: new Date().toISOString() };
@@ -584,9 +584,10 @@ window.submitEstudo = async function(ev) {
             }
         }
         if (saved) updateLocal(saved);
-        updateDashboard(); filterEstudos(); updateCursoSelects();
+        updateDashboard(); 
+        filterEstudos(); 
+        updateCursoSelects();
         fecharModal('modalFormEstudo');
-        if (!id) toast('Estudo registrado', 'success');
     } catch (err) {
         toast('Erro: ' + err.message, 'error');
     }
@@ -642,7 +643,6 @@ window.submitRevisao = async function(ev) {
         toast('Revisão agendada', 'success');
     } catch {
         // offline: já está na fila
-        // atualiza localmente
         e.revisoes = revs;
         updateLocal(e);
         updateDashboard(); filterEstudos();
@@ -934,7 +934,7 @@ window.gerarPDF = function() {
     doc.text(tituloLines, W / 2, y, { align: 'center' });
     y += tituloLines.length * 8 + 4;
 
-    doc.setDrawColor(204, 112, 0);
+    doc.setDrawColor(249, 115, 22); // laranja mais forte
     doc.setLineWidth(0.8);
     doc.line(ML, y, W - MR, y);
     y += 10;
@@ -949,7 +949,7 @@ window.gerarPDF = function() {
         checkPage(14);
         const cabecalho = grp.unidade ? `[${grp.unidade}] — ${grp.conteudo}` : grp.conteudo;
         setFont('bold', 12);
-        doc.setTextColor(204, 112, 0);
+        doc.setTextColor(249, 115, 22);
         const cabLines = doc.splitTextToSize(cabecalho, CW);
         doc.text(cabLines, ML, y);
         y += cabLines.length * 6 + 3;
@@ -1006,7 +1006,7 @@ window.gerarPDF = function() {
     doc.setTextColor(30, 30, 30);
     doc.text('GABARITO', W / 2, y, { align: 'center' });
     y += 5;
-    doc.setDrawColor(204, 112, 0);
+    doc.setDrawColor(249, 115, 22);
     doc.setLineWidth(0.8);
     doc.line(ML, y, W - MR, y);
     y += 10;
@@ -1019,7 +1019,7 @@ window.gerarPDF = function() {
         checkPage(12);
         const cabecalho = grp.unidade ? `[${grp.unidade}] — ${grp.conteudo}` : grp.conteudo;
         setFont('bold', 11);
-        doc.setTextColor(204, 112, 0);
+        doc.setTextColor(249, 115, 22);
         doc.text(cabecalho, ML, y);
         y += 6;
         doc.setDrawColor(230, 230, 230);
@@ -1162,4 +1162,4 @@ function toast(msg, type = 'info') {
     }, 3200);
 }
 
-console.log('Jornada Academica v2 pronto');
+console.log('Jornada Academica v2.1 pronto');
