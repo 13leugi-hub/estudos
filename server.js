@@ -73,7 +73,10 @@ app.post('/api/estudos', async (req, res) => {
         questoes:    questoes    || '[]'
     }]).select().single();
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+        console.error('Erro ao criar estudo:', error);
+        return res.status(500).json({ error: error.message });
+    }
     res.status(201).json(data);
 });
 
