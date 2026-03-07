@@ -1,10 +1,9 @@
 /* ============================================================
-   JORNADA ACADEMICA — styles.css
-   Visual identico ao Controle de Frete
+   JORNADA ACADEMICA — styles.css (cor laranja forte #F97316)
    ============================================================ */
 
 :root {
-    --primary: #CC7000;
+    --primary: #F97316; /* laranja mais vibrante */
     --bg-secondary: #F8F9FA;
     --bg-card: #FFFFFF;
     --text-primary: #1A1A1A;
@@ -37,7 +36,7 @@
         --bg-card: #1A1A1A;
         --text-primary: #FFFFFF;
         --text-secondary: #A0A0A0;
-        --border-color: rgba(204,112,0,0.08);
+        --border-color: rgba(249,115,22,0.08);
         --input-bg: #2A2A2A;
         --table-stripe: #1F1F1F;
         --card-shadow: none;
@@ -61,8 +60,8 @@ body {
 /* LOADER / SPLASH */
 .loader {
     width: 48px; height: 48px;
-    border: 4px solid rgba(204,112,0,0.2);
-    border-top-color: #CC7000;
+    border: 4px solid rgba(249,115,22,0.2);
+    border-top-color: #F97316;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
@@ -71,17 +70,21 @@ body {
 .splash-screen {
     position: fixed; inset: 0;
     background: var(--bg-secondary);
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
     z-index: 99999;
-    animation: splashOut 0s ease 2.4s forwards;
 }
-@keyframes splashOut { to { opacity: 0; visibility: hidden; } }
+.splash-screen.hidden {
+    display: none;
+}
 
 .app-content {
     opacity: 0;
-    animation: appIn 0s ease 2.4s forwards;
+    transition: opacity 0.3s;
 }
-@keyframes appIn { to { opacity: 1; } }
+.app-content.visible {
+    opacity: 1;
+}
 
 /* LAYOUT */
 .container {
@@ -288,7 +291,7 @@ tbody tr.row-concluido { background: rgba(34,197,94,0.12) !important; border-lef
 tbody tr.row-concluido:hover { background: rgba(34,197,94,0.18) !important; }
 tbody tr.row-atraso { background: rgba(239,68,68,0.06) !important; border-left: 3px solid #EF4444; }
 
-/* CHECKBOX — idêntico ao Controle de Frete */
+/* CHECKBOX */
 .checkbox-wrapper { display: inline-flex; align-items: center; justify-content: center; }
 .styled-checkbox { position: absolute; opacity: 0; cursor: pointer; width: 40px; height: 40px; }
 .checkbox-label-styled {
@@ -297,7 +300,7 @@ tbody tr.row-atraso { background: rgba(239,68,68,0.06) !important; border-left: 
     border: 2px solid var(--border-color); border-radius: 8px;
     cursor: pointer; transition: all 0.2s ease; background: var(--input-bg);
 }
-.checkbox-label-styled:hover { border-color: var(--primary); background: rgba(204,112,0,0.05); }
+.checkbox-label-styled:hover { border-color: var(--primary); background: rgba(249,115,22,0.05); }
 .styled-checkbox:checked + .checkbox-label-styled { background: var(--success-color); border-color: var(--success-color); }
 .styled-checkbox:checked + .checkbox-label-styled::after { content: '✓'; color: white; font-size: 1rem; font-weight: 700; }
 
@@ -366,8 +369,6 @@ input::placeholder, textarea::placeholder { color: var(--text-secondary); }
 .alt-display .l { font-weight: 700; min-width: 20px; color: var(--text-secondary); }
 .alt-display.correta .l { color: var(--success-color); }
 .alt-display.correta { font-weight: 500; }
-
-
 
 /* BUTTONS */
 button {
@@ -480,7 +481,7 @@ button[type="submit"] { background: var(--btn-save); }
     border-bottom: 3px solid transparent; margin-bottom: -2px;
     white-space: nowrap; transition: all 0.2s;
 }
-.tab-btn:hover { color: var(--text-primary); background: rgba(204,112,0,0.04); }
+.tab-btn:hover { color: var(--text-primary); background: rgba(249,115,22,0.04); }
 .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
 .tab-content { display: none; }
 .tab-content.active { display: block; animation: fadeInTab 0.2s ease; }
@@ -517,12 +518,12 @@ button[type="submit"] { background: var(--btn-save); }
 .questao-card {
     border: 1px solid var(--border-color); border-radius: 8px;
     padding: 1rem; margin-bottom: 0.75rem; background: var(--input-bg);
+    position: relative;
 }
 .questao-card:last-child { margin-bottom: 0; }
 .questao-card.feita { opacity: 0.55; }
 .q-enunciado { font-weight: 500; line-height: 1.5; margin-bottom: 0.6rem; padding-right: 50px; }
 .q-actions { position: absolute; top: 0.75rem; right: 0.75rem; }
-.questao-card { position: relative; }
 .q-badge { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
 /* EMPTY STATE */
