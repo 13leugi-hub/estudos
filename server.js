@@ -21,8 +21,8 @@ app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','PATCH','OPTIO
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use((req, _res, next) => { console.log(`${new Date().toISOString()} ${req.method} ${req.path}`); next(); });
-// Serve frontend files — coloque index.html, styles.css, script.js na pasta public/
-// OU na raiz do projeto (ambos funcionam)
+
+// Serve arquivos estáticos
 const publicDir = path.join(__dirname, 'public');
 const rootDir   = __dirname;
 app.use(express.static(publicDir));
@@ -119,6 +119,6 @@ app.get('/', (_req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.use((_req, res) => res.status(404).json({ error: 'Não encontrado' }));
 
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`\nJornada Academica v3.0.0 — porta ${PORT}`);
+    console.log(`\nJornada Academica v2.0.0 — porta ${PORT}`);
     console.log(`Supabase: ${supabaseUrl}\n`);
 });
