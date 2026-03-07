@@ -1,39 +1,31 @@
 /* ============================================================
-   JORNADA ACADÊMICA — script.js v3
+   JORNADA ACADÊMICA — script.js v2 (com fila offline)
    ============================================================ */
 
-// API URL — ajuste se necessário (ex: 'https://meuapp.onrender.com/api')
 const API_URL = (window.location.origin.startsWith('http') ? window.location.origin : '') + '/api';
-
 let estudos = [];
 let currentMonth = new Date();
 let calYear = new Date().getFullYear();
 let tipoQuestaoAtual = 'objetiva';
 let _confirmResolve = null;
+let filaOffline = []; // { action, data, id, timestamp }
+let sincronizando = false;
 
 const MESES       = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const MESES_ABREV = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
 
 /* ============================================================
-   MODAL MANAGER — um de cada vez, sem sobreposição
+   MODAL MANAGER — apenas um modal por vez (exceto confirm)
    ============================================================ */
-const modalStack = [];
-
 function abrirModal(id) {
-    // Não empilhar o mesmo modal
-    if (modalStack.includes(id)) return;
-
-    // Se já há modal aberto e não é o de confirmação, fecha o topo antes
-    // (exceto confirm que pode ficar em cima)
-    if (modalStack.length > 0 && id !== 'modalConfirm') {
-        // empilhar por cima sem fechar (permite confirm em cima)
-    }
-
+    // Fecha todos os modais abertos (exceto o confirm, se for o caso)
+    document.querySelectorAll('.modal-overlay.show').forEach(el => {
+        if (el.id !== 'modalConfirm') fecharModal(el.id);
+    });
     const el = document.getElementById(id);
     if (!el) return;
     el.classList.add('show');
     el.style.display = 'flex';
-    modalStack.push(id);
     document.body.style.overflow = 'hidden';
 }
 
@@ -42,23 +34,19 @@ function fecharModal(id) {
     if (!el) return;
     el.classList.remove('show');
     el.style.display = 'none';
-    const idx = modalStack.indexOf(id);
-    if (idx !== -1) modalStack.splice(idx, 1);
-    if (modalStack.length === 0) document.body.style.overflow = '';
+    if (document.querySelectorAll('.modal-overlay.show').length === 0) {
+        document.body.style.overflow = '';
+    }
 }
 
-// Helper objects para cada modal
 const modalAtraso         = { open: () => { renderAtrasosBody();    abrirModal('modalAtraso'); } };
 const modalRevisoesAlert  = { open: () => { renderRevisoesAlert();  abrirModal('modalRevisoesAlert'); } };
 const modalTodasRevisoes  = { open: () => { renderTodasRevisoes();  abrirModal('modalTodasRevisoes'); } };
 const modalBancoQuestoes  = { open: () => { renderBancoQuestoes();  abrirModal('modalBancoQuestoes'); } };
 
-// Fechar modal ao clicar no overlay (fundo escuro)
 document.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal-overlay') && e.target.classList.contains('show')) {
-        if (e.target.id !== 'modalConfirm') {
-            fecharModal(e.target.id);
-        }
+        if (e.target.id !== 'modalConfirm') fecharModal(e.target.id);
     }
 });
 
@@ -78,9 +66,85 @@ window.confirmResolve = function(val) {
 };
 
 /* ============================================================
+   FILA DE OPERAÇÕES OFFLINE
+   ============================================================ */
+function carregarFila() {
+    try {
+        filaOffline = JSON.parse(localStorage.getItem('ja_fila')) || [];
+    } catch {
+        filaOffline = [];
+    }
+}
+function salvarFila() {
+    localStorage.setItem('ja_fila', JSON.stringify(filaOffline));
+    atualizarBotaoSincronizar();
+}
+function adicionarNaFila(acao, dados, id = null) {
+    filaOffline.push({
+        action: acao,
+        data: dados,
+        id: id,
+        timestamp: Date.now()
+    });
+    salvarFila();
+}
+function removerDaFila(index) {
+    filaOffline.splice(index, 1);
+    salvarFila();
+}
+
+async function sincronizarAgora() {
+    if (sincronizando) return;
+    sincronizando = true;
+    atualizarBotaoSincronizar(true);
+
+    for (let i = 0; i < filaOffline.length; i++) {
+        const item = filaOffline[i];
+        try {
+            if (item.action === 'create') {
+                await fetch(`${API_URL}/estudos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item.data)
+                });
+            } else if (item.action === 'update') {
+                await fetch(`${API_URL}/estudos/${item.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item.data)
+                });
+            } else if (item.action === 'delete') {
+                await fetch(`${API_URL}/estudos/${item.id}`, { method: 'DELETE' });
+            }
+            removerDaFila(i);
+            i--; // ajusta índice
+        } catch (err) {
+            console.warn('Falha ao sincronizar item', item, err);
+        }
+    }
+    sincronizando = false;
+    atualizarBotaoSincronizar();
+    await carregarEstudos(); // recarrega dados atualizados
+}
+
+function atualizarBotaoSincronizar(emAndamento = false) {
+    const btn = document.getElementById('syncButton');
+    if (!btn) return;
+    const pendentes = filaOffline.length;
+    if (emAndamento) {
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sincronizando...';
+        btn.disabled = true;
+    } else {
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sincronizar ${pendentes ? '('+pendentes+')' : ''}`;
+        btn.disabled = false;
+    }
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 document.addEventListener('DOMContentLoaded', () => {
+    carregarFila();
     updateMonthLabel();
     renderCalendar();
     carregarEstudos();
@@ -100,31 +164,31 @@ document.addEventListener('DOMContentLoaded', () => {
 async function carregarEstudos() {
     try {
         const res = await fetch(`${API_URL}/estudos`);
-        if (!res.ok) {
-            // Tenta ler o body do erro para melhor diagnóstico
-            let msg = `HTTP ${res.status}`;
-            try { const j = await res.json(); msg = j.error || j.message || msg; } catch {}
-            throw new Error(msg);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         estudos = await res.json();
         localStorage.setItem('ja_cache', JSON.stringify(estudos));
         setOnline(true);
+        document.getElementById('splashScreen').style.display = 'none';
     } catch (err) {
-        console.error('[Jornada] Falha na API:', err.message);
-        console.info('[Jornada] Dica: Se o erro for sobre "data_inicio", execute MIGRATION.sql no Supabase SQL Editor.');
+        console.error('Falha na API:', err);
         setOnline(false);
         const c = localStorage.getItem('ja_cache');
-        if (c) { estudos = JSON.parse(c); console.info('[Jornada] Usando cache local.'); }
+        if (c) {
+            estudos = JSON.parse(c);
+            console.info('Usando cache local.');
+        }
+        document.getElementById('splashScreen').style.display = 'none';
+        if (estudos.length === 0) {
+            toast('Sem conexão e sem dados em cache', 'error');
+        }
     }
     updateDashboard();
     filterEstudos();
     updateCursoSelects();
+    atualizarBotaoSincronizar();
 }
 
-window.sincronizar = async function() {
-    await carregarEstudos();
-    toast('Sincronizado com sucesso', 'success');
-};
+window.sincronizarAgora = sincronizarAgora;
 
 function setOnline(ok) {
     const el = document.getElementById('connectionStatus');
@@ -133,13 +197,44 @@ function setOnline(ok) {
 }
 
 async function apiPatch(id, body) {
-    const res = await fetch(`${API_URL}/estudos/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    try {
+        const res = await fetch(`${API_URL}/estudos/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        // Se offline, adiciona à fila
+        adicionarNaFila('update', body, id);
+        throw err; // para o caller saber que não foi enviado
+    }
+}
+
+async function apiDelete(id) {
+    try {
+        const res = await fetch(`${API_URL}/estudos/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (err) {
+        adicionarNaFila('delete', null, id);
+        throw err;
+    }
+}
+
+async function apiCreate(data) {
+    try {
+        const res = await fetch(`${API_URL}/estudos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        adicionarNaFila('create', data);
+        throw err;
+    }
 }
 
 function updateLocal(saved) {
@@ -268,12 +363,28 @@ function renderTabela(list) {
 
     cont.innerHTML = `<div style="overflow-x:auto"><table>
         <thead><tr>
-            <th style="width:46px">&#x2713;</th>
-            <th>Curso</th><th>Unidade</th><th>Conteúdo</th>
-            <th>Término</th><th>Status</th><th>Revisões</th><th>Ações</th>
+            <th style="width:46px">✓</th>
+            <th onclick="ordenarPor('curso')" style="cursor:pointer">Curso</th>
+            <th>Unidade</th>
+            <th>Conteúdo</th>
+            <th>Término</th>
+            <th>Status</th>
+            <th>Revisões</th>
+            <th>Ações</th>
         </tr></thead>
         <tbody>${rows}</tbody>
     </table></div>`;
+}
+
+let ordem = { coluna: null, crescente: true };
+function ordenarPor(col) {
+    if (ordem.coluna === col) ordem.crescente = !ordem.crescente;
+    else { ordem.coluna = col; ordem.crescente = true; }
+    // Reordena a lista atual (não filtra novamente)
+    const listaAtual = estudos.filter(e => {
+        // aplica os mesmos filtros de filterEstudos? melhor reaplicar filtro completo
+        filterEstudos(); // isso já re-renderiza baseado nos filtros e mês
+    });
 }
 
 /* ============================================================
@@ -293,7 +404,7 @@ async function toggleConcluido(id) {
     } catch {
         e.status = prev;
         updateDashboard(); filterEstudos();
-        toast('Erro ao salvar', 'error');
+        toast('Operação salva na fila offline', 'info');
     }
 }
 
@@ -308,7 +419,6 @@ window.verEstudo = function(id) {
     const quests = parseJ(e.questoes);
     const obs   = parseJ(e.observacoes);
 
-    // TAB INFO
     const infoHtml = `
         <div class="info-grid">
             <div class="info-item"><label>Curso</label><span>${x(e.curso)}</span></div>
@@ -320,7 +430,6 @@ window.verEstudo = function(id) {
         ${obs.length ? `<div class="section-title">Observações</div>
         <div class="obs-list">${obs.map(o=>`<div class="obs-item"><div class="obs-meta">${x(fmtDate(o.data?.slice(0,10) || ''))}</div><div class="obs-texto">${x(o.texto)}</div></div>`).join('')}</div>` : ''}`;
 
-    // TAB REVISÕES
     const revisoesHtml = revs.length === 0
         ? `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg><p>Nenhuma revisão agendada</p></div>`
         : revs.map((r,i) => {
@@ -337,7 +446,6 @@ window.verEstudo = function(id) {
             </div>`;
         }).join('');
 
-    // TAB QUESTÕES
     const questoesHtml = quests.length === 0
         ? `<div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><p>Nenhuma questão registrada</p></div>`
         : quests.map((q,i) => renderQuestaoCard(q, e.id, i)).join('');
@@ -453,18 +561,35 @@ window.submitEstudo = async function(ev) {
     };
     if (!id) { payload.revisoes = '[]'; payload.questoes = '[]'; }
     try {
-        const res = await fetch(id ? `${API_URL}/estudos/${id}` : `${API_URL}/estudos`, {
-            method: id ? 'PUT' : 'POST',
-            headers: {'Content-Type':'application/json'},
-            body: JSON.stringify(payload)
-        });
-        if (!res.ok) { const j = await res.json(); throw new Error(j.error || 'Erro'); }
-        const saved = await res.json();
-        updateLocal(saved);
+        let saved;
+        if (id) {
+            try {
+                saved = await apiPatch(id, payload);
+            } catch {
+                // Se falhou (offline), adiciona à fila e simula salvamento local
+                adicionarNaFila('update', payload, id);
+                saved = { ...findEstudo(id), ...payload, id };
+                updateLocal(saved);
+                toast('Alteração salva na fila offline', 'info');
+            }
+        } else {
+            try {
+                saved = await apiCreate(payload);
+            } catch {
+                const tempId = 'temp_' + Date.now();
+                saved = { ...payload, id: tempId, created_at: new Date().toISOString() };
+                estudos.unshift(saved);
+                adicionarNaFila('create', payload);
+                toast('Estudo salvo na fila offline', 'info');
+            }
+        }
+        if (saved) updateLocal(saved);
         updateDashboard(); filterEstudos(); updateCursoSelects();
         fecharModal('modalFormEstudo');
-        toast(id ? 'Estudo atualizado' : 'Estudo registrado', 'success');
-    } catch (err) { toast('Erro: ' + err.message, 'error'); }
+        if (!id) toast('Estudo registrado', 'success');
+    } catch (err) {
+        toast('Erro: ' + err.message, 'error');
+    }
 };
 
 window.excluirEstudo = async function(id) {
@@ -476,11 +601,10 @@ window.excluirEstudo = async function(id) {
     updateDashboard(); filterEstudos(); updateCursoSelects();
     toast('Estudo excluído', 'success');
     try {
-        await fetch(`${API_URL}/estudos/${id}`, {method:'DELETE'});
+        await apiDelete(id);
     } catch {
-        estudos = bkp;
-        updateDashboard(); filterEstudos();
-        toast('Erro ao excluir no servidor', 'error');
+        // offline: já está na fila
+        toast('Exclusão salva na fila offline', 'info');
     }
 };
 
@@ -516,7 +640,15 @@ window.submitRevisao = async function(ev) {
         updateDashboard(); filterEstudos();
         fecharModal('modalFormRevisao');
         toast('Revisão agendada', 'success');
-    } catch { toast('Erro ao agendar', 'error'); }
+    } catch {
+        // offline: já está na fila
+        // atualiza localmente
+        e.revisoes = revs;
+        updateLocal(e);
+        updateDashboard(); filterEstudos();
+        fecharModal('modalFormRevisao');
+        toast('Revisão salva na fila offline', 'info');
+    }
 };
 
 window.marcarRevFeita = async function(estudoId, idx) {
@@ -532,7 +664,12 @@ window.marcarRevFeita = async function(estudoId, idx) {
         updateDashboard(); filterEstudos();
         if (document.getElementById('modalTodasRevisoes').classList.contains('show')) renderTodasRevisoes();
         toast('Revisão concluída', 'success');
-    } catch { toast('Erro ao atualizar', 'error'); }
+    } catch {
+        e.revisoes = revs;
+        updateLocal(e);
+        updateDashboard(); filterEstudos();
+        toast('Marcação salva na fila offline', 'info');
+    }
 };
 
 function renderTodasRevisoes() {
@@ -617,7 +754,7 @@ function renderRevisoesAlert() {
 }
 
 /* ============================================================
-   QUESTÕES — Objetiva / Discursiva
+   QUESTÕES
    ============================================================ */
 const LETRAS = ['A','B','C','D','E'];
 
@@ -641,7 +778,6 @@ function buildAlternativasUI() {
             </div>
         </div>`).join('');
 
-    // Comportamento exclusivo: só um marcado por vez
     cont.addEventListener('change', function(e) {
         if (!e.target.classList.contains('chk-gabarito')) return;
         if (e.target.checked) {
@@ -649,7 +785,6 @@ function buildAlternativasUI() {
                 if (cb !== e.target) cb.checked = false;
             });
         } else {
-            // Impede desmarcar sem ter outro marcado
             const algum = [...cont.querySelectorAll('.chk-gabarito')].some(cb => cb.checked);
             if (!algum) e.target.checked = true;
         }
@@ -704,7 +839,13 @@ window.submitQuestao = async function(ev) {
         updateDashboard(); filterEstudos();
         fecharModal('modalFormQuestao');
         toast('Questão registrada', 'success');
-    } catch { toast('Erro ao salvar questão', 'error'); }
+    } catch {
+        e.questoes = quests;
+        updateLocal(e);
+        updateDashboard(); filterEstudos();
+        fecharModal('modalFormQuestao');
+        toast('Questão salva na fila offline', 'info');
+    }
 };
 
 window.marcarQuestaoFeita = async function(estudoId, idx) {
@@ -720,7 +861,12 @@ window.marcarQuestaoFeita = async function(estudoId, idx) {
         updateDashboard(); filterEstudos();
         if (document.getElementById('modalBancoQuestoes').classList.contains('show')) renderBancoQuestoes();
         toast('Questão marcada como feita', 'success');
-    } catch { toast('Erro ao atualizar', 'error'); }
+    } catch {
+        e.questoes = qs;
+        updateLocal(e);
+        updateDashboard(); filterEstudos();
+        toast('Marcação salva na fila offline', 'info');
+    }
 };
 
 window.renderBancoQuestoes = function() {
@@ -757,11 +903,9 @@ window.gerarPDF = function() {
     const cursoFiltro = document.getElementById('filterCurso')?.value;
     if (!cursoFiltro) { toast('Selecione um curso no filtro para gerar o PDF', 'info'); return; }
 
-    // Agrupa por unidade-conteudo
     const estudosDoCurso = estudos.filter(e => e.curso === cursoFiltro);
     if (!estudosDoCurso.length) { toast('Nenhum estudo encontrado para este curso', 'error'); return; }
 
-    // Coleta todas as questões agrupadas por unidade+conteúdo
     const grupos = {};
     estudosDoCurso.forEach(e => {
         const key = `${e.unidade || 'Sem Unidade'}||${e.conteudo}`;
@@ -772,42 +916,36 @@ window.gerarPDF = function() {
     const gruposList = Object.values(grupos).filter(g => g.questoes.length > 0);
     if (!gruposList.length) { toast('Nenhuma questão encontrada para este curso', 'info'); return; }
 
-    // jsPDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const W = 210, ML = 18, MR = 18, MT = 20;
-    const CW = W - ML - MR; // content width = 174
+    const CW = W - ML - MR;
     let y = MT;
 
     const checkPage = (needed = 10) => {
         if (y + needed > 277) { doc.addPage(); y = MT; }
     };
 
-    // Fonts helpers
     const setFont = (style, size) => { doc.setFont('helvetica', style); doc.setFontSize(size); };
 
-    // ---- TÍTULO DO CURSO ----
     setFont('bold', 18);
     doc.setTextColor(30, 30, 30);
     const tituloLines = doc.splitTextToSize(cursoFiltro.toUpperCase(), CW);
     doc.text(tituloLines, W / 2, y, { align: 'center' });
     y += tituloLines.length * 8 + 4;
 
-    // linha separadora
     doc.setDrawColor(204, 112, 0);
     doc.setLineWidth(0.8);
     doc.line(ML, y, W - MR, y);
     y += 10;
 
-    // ---- QUESTÕES POR GRUPO ----
-    const gabaritoMap = {}; // chave = "unidade||conteudo", valor = [{num, tipo, gabarito}]
+    const gabaritoMap = {};
     let qNumGlobal = 1;
 
     gruposList.forEach((grp, gi) => {
         const key = `${grp.unidade}||${grp.conteudo}`;
         gabaritoMap[key] = [];
 
-        // Cabeçalho do grupo
         checkPage(14);
         const cabecalho = grp.unidade ? `[${grp.unidade}] — ${grp.conteudo}` : grp.conteudo;
         setFont('bold', 12);
@@ -816,19 +954,16 @@ window.gerarPDF = function() {
         doc.text(cabLines, ML, y);
         y += cabLines.length * 6 + 3;
 
-        // Linha abaixo do cabeçalho
         doc.setDrawColor(230, 230, 230);
         doc.setLineWidth(0.3);
         doc.line(ML, y, W - MR, y);
         y += 5;
 
-        // Questões
         grp.questoes.forEach((q, qi) => {
             const isObj = q.tipo === 'objetiva';
             const enunciado = q.enunciado || q.pergunta || '';
             const alts = q.alternativas || [];
 
-            // Enunciado
             checkPage(12);
             setFont('bold', 10);
             doc.setTextColor(30, 30, 30);
@@ -837,7 +972,6 @@ window.gerarPDF = function() {
             doc.text(enuncLines, ML, y);
             y += enuncLines.length * 5.5 + 2;
 
-            // Alternativas (objetiva)
             if (isObj) {
                 alts.forEach((alt, ai) => {
                     if (!alt) return;
@@ -853,7 +987,6 @@ window.gerarPDF = function() {
 
             y += 4;
 
-            // Gabarito para o sumário
             gabaritoMap[key].push({
                 num: qNumGlobal,
                 tipo: isObj ? 'objetiva' : 'discursiva',
@@ -866,7 +999,6 @@ window.gerarPDF = function() {
         if (gi < gruposList.length - 1) y += 6;
     });
 
-    // ---- GABARITO ----
     doc.addPage();
     y = MT;
 
@@ -960,7 +1092,6 @@ function updateMonthLabel() {
     if (el) el.textContent = `${MESES[currentMonth.getMonth()]} ${currentMonth.getFullYear()}`;
 }
 
-// Fechar calendário ao clicar fora
 document.addEventListener('click', e => {
     const cal = document.getElementById('calendarModal');
     if (cal && cal.classList.contains('show')) {
@@ -1031,4 +1162,4 @@ function toast(msg, type = 'info') {
     }, 3200);
 }
 
-console.log('Jornada Academica v3 pronto');
+console.log('Jornada Academica v2 pronto');
