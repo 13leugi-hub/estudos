@@ -12,10 +12,11 @@
 <!-- SPLASH -->
 <div class="splash-screen" id="splashScreen">
     <div class="loader"></div>
+    <p id="splashMessage" style="margin-top: 1rem; color: var(--text-secondary)">Carregando...</p>
 </div>
 
 <!-- APP -->
-<div class="app-content" id="appContent">
+<div class="app-content" id="appContent" style="opacity:0">
 <div class="container">
 
     <!-- HEADER -->
@@ -26,6 +27,10 @@
                 <span class="status-dot"></span>
             </div>
         </div>
+        <button class="btn-new-order-header" onclick="sincronizarAgora()" id="syncButton" title="Sincronizar pendências">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            Sincronizar
+        </button>
     </div>
 
     <!-- DASHBOARD -->
@@ -120,9 +125,6 @@
             <button class="calendar-btn" onclick="gerarPDF()" title="Gerar PDF do curso selecionado">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
             </button>
-            <button class="calendar-btn" onclick="sincronizar()" title="Sincronizar">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            </button>
         </div>
     </div>
 
@@ -152,7 +154,7 @@
 
 
 <!-- ====================================================
-     MODAIS — cada um com ID único e classe modal-overlay
+     MODAIS
      ==================================================== -->
 
 <!-- MODAL: FORM ESTUDO -->
@@ -276,15 +278,12 @@
                 <!-- ALTERNATIVAS (objetiva) -->
                 <div class="form-group full" id="blockoAlternativas">
                     <label>Alternativas</label>
-                    <div id="alternativasContainer">
-                        <!-- gerado pelo JS -->
-                    </div>
+                    <div id="alternativasContainer"></div>
                 </div>
-                <!-- GABARITO (objetiva) — seleção de rádio, mostrada acima nas alternativas -->
-                <!-- RESPOSTA CORRETA / JUSTIFICATIVA (discursiva) -->
+                <!-- RESPOSTA DISCURSIVA -->
                 <div class="form-group full" id="blockoResposta" style="display:none">
                     <label for="fRespostaDiscursiva">Resposta / Justificativa Correta *</label>
-                    <textarea id="fRespostaDiscursiva" rows="3" placeholder="Escreva a resposta esperada ou a justificativa correta..."></textarea>
+                    <textarea id="fRespostaDiscursiva" rows="3" placeholder="Escreva a resposta esperada..."></textarea>
                 </div>
             </div>
             <div class="modal-actions">
